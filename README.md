@@ -16,9 +16,37 @@ Usages
 ------
 
 ```python
-import 
-```
+# import module
+from rand import Rand
 
+# initialise object
+rand = Rand()
+
+# generate pattern literal
+rand.gen('koro') # ['koro']
+rand.gen('28') # ['28']
+rand.gen('a-z') # ['a-z']
+
+# generate pattern any
+rand.gen('.') # any char in string.printable
+
+# generate pattern branch
+rand.gen('ko|ro') # either ['ko'] or ['ro']
+rand.gen('ko|ro|ro') # either ['ko'] or ['ro']
+
+# generate pattern in
+rand.gen('[kororo]') # either ['k'] or ['o'] or ['r']
+rand.gen('k[o]r[o]r[o]') # ['kororo']
+
+# generate pattern repeat
+rand.gen('r{2,8}') # char r in length between 2 to 8 times
+
+# generate pattern range
+rand.gen('[a-z]') # char between a to z
+
+# generate pattern subpattern
+rand.gen('(ro)') # ['ro']
+```
 
 Test
 ----
