@@ -1,14 +1,13 @@
 import typing
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from rand import Rand
 
 
-class RandBaseProvider:
+class BaseRandAdapter:
     _rand: typing.Optional['Rand']
 
-    def __init__(self, rand: 'Rand', prefix: str):
-        self._prefix = prefix
+    def __init__(self, rand: 'Rand' = None):
         self._rand = rand
 
     @property
@@ -19,13 +18,19 @@ class RandBaseProvider:
     def rand(self, rand):
         self._rand = rand
 
-    def register(self):
+
+class RandBaseProvider(BaseRandAdapter):
+    def __init__(self, prefix: str = ''):
+        super(RandBaseProvider, self).__init__()
+        self._prefix = prefix
+
+    def register(self):  # pragma: no cover
         pass
 
 
 class RandProxyBaseProvider(RandBaseProvider):
-    def __init__(self, rand: 'Rand', prefix: str, target=None):
-        super(RandProxyBaseProvider, self).__init__(rand=rand, prefix=prefix)
+    def __init__(self, prefix: str = '', target=None):
+        super(RandProxyBaseProvider, self).__init__(prefix=prefix)
         self._target = target
 
     @property

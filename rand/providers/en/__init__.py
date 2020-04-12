@@ -1,13 +1,13 @@
 import typing
-from rand.providers.base import RandProxyBaseProvider
+from rand.providers.base import RandProxyBaseProvider, BaseRandAdapter
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from rand import Rand
 
 
-class ENTarget:
-    def __init__(self, rand: 'Rand'):
-        self._rand = rand
+class ENTarget(BaseRandAdapter):
+    def __init__(self, rand: 'Rand' = None):
+        super().__init__(rand=rand)
 
     def vocal(self):
         vocals = 'aiueo'
@@ -19,6 +19,6 @@ class ENTarget:
 
 
 class ENProvider(RandProxyBaseProvider):
-    def __init__(self, rand: 'Rand', prefix: str, target=None):
-        target = target if target else ENTarget(rand=rand)
-        super(ENProvider, self).__init__(rand=rand, prefix=prefix, target=target)
+    def __init__(self, prefix: str = 'en', target=None):
+        target = target if target else ENTarget()
+        super(ENProvider, self).__init__(prefix=prefix, target=target)

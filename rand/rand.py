@@ -1,7 +1,10 @@
+import inspect
 import re
 import sre_parse
 import string
 import typing
+import importlib
+import pkgutil
 from sre_parse import SubPattern
 from sre_constants import LITERAL, MAXREPEAT
 from random import Random
@@ -24,6 +27,7 @@ class Rand:
         self._args = {}
         if seed:
             self.random_seed(seed)
+        self._discover_providers()
 
     @property
     def random(self):
@@ -33,11 +37,36 @@ class Rand:
         self._random.seed(seed)
 
     def register_provider(self, provider):
+        from rand.providers.base import RandProxyBaseProvider
+        provider.rand = self
+        if isinstance(provider, RandProxyBaseProvider):
+            if provider.target:
+                provider.target.rand = self
         provider.register()
+
+    def _discover_providers(self):
+        import rand.providers
+        from rand.providers.base import RandBaseProvider, RandProxyBaseProvider
+
+        def iter_namespace(ns_pkg: typing.Any):
+            return pkgutil.walk_packages(ns_pkg.__path__, '%s.' % ns_pkg.__name__)
+
+        providers = {
+            name: importlib.import_module(name) for finder, name, ispkg in iter_namespace(rand.providers)
+        }
+        for module_name, module in providers.items():
+            for obj_name, obj in inspect.getmembers(module):
+                if inspect.isclass(obj):
+                    if issubclass(obj, RandBaseProvider) and obj != RandBaseProvider and obj != RandProxyBaseProvider:
+                        try:
+                            # TODO: perhaps adding new class function to check?
+                            self.register_provider(provider=obj())
+                        except Exception:
+                            pass
 
     def register_parse(self, name: str, fn: typing.Callable[['Rand', typing.Any], typing.Any]):
         parse_name = '_parse_%s' % name.lower()
-        invalid_chars = ''.join(list(set(list(parse_name)) - set(list(string.ascii_letters + '_'))))
+        invalid_chars = ''.join(list(set(list(parse_name)) - set(list(string.ascii_letters + string.digits + '_'))))
         if len(invalid_chars) > 0:
             raise ValueError('E002 - Name "%s" contains invalid character "%s"' % (name, invalid_chars))
         setattr(self, parse_name, fn)
@@ -122,7 +151,6 @@ class Rand:
             token = pattern[0]
             # get parser based on token with _parse_noop as default
             return getattr(self, '_parse_%s' % str(token).lower(), self._parse_noop)(pattern)
-        return ''
 
     def _prepare_args(self, args):
         # args input will be always be either list or dict
@@ -160,23 +188,21 @@ class Rand:
         regex_parsed: SubPattern = sre_parse.parse(regex_pattern)
         # generate randomly X times
         self._args = self._prepare_args(args)
-        print(pattern, self._args, regex_parsed)
         rs = [self._parse(regex_parsed) for _ in range(n)]
         self._args = {}
         return rs
 
-    def map(self, x):
-        pass
-
-    def _map_lower(self, opt=None):
-        def _map_lower():
-            pass
-
-        pass
-
-    def filter(self, x):
-        pass
-
+    # def map(self, x):
+    #     pass
+    #
+    # def _map_lower(self, opt=None):
+    #     def _map_lower():
+    #         pass
+    #
+    #     pass
+    #
+    # def filter(self, x):
+    #     pass
 
 # print(rand.many('a|b|c|d|r|o|a', maps=[
 #     'lower',

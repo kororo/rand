@@ -1,7 +1,12 @@
 rand
 ====
 
-Random generated String from regex pattern
+Random generated String from regex pattern.
+
+WARNING
+-------
+
+The library *rand* is still in working-in-progress. It is subject to high possibility of API changes. Would appreciate for feedbacks, suggestions or helps.
 
 Install
 -------
@@ -48,6 +53,44 @@ rand.gen('[a-z]') # char between a to z
 rand.gen('(ro)') # ['ro']
 ```
 
+Providers
+---------
+
+The library *rand* at core only provide random generator based on regex. Providers are built to allow extensions for rand.
+Below is sample code how to integrate existing class definition (TestProxy) to Rand.
+
+```python
+from rand import Rand
+from rand.providers.base import RandProxyBaseProvider
+
+
+class TestProxy:
+    def target(self, arg1='def1', arg2='def2'):
+        return '%s-%s' % (arg1, arg2)
+
+rand = Rand()
+test_proxy = RandProxyBaseProvider(prefix='test', target=TestProxy())
+rand.register_provider(test_proxy)
+rand.register_parse('test_target', test_proxy.proxy_parse())
+print(rand.gen('(:test_target:)')) # ['def1-def2']
+print(rand.gen('(:test_target:)', ['ok1'])) # ['ok1-def2']
+print(rand.gen('(:test_target:)', ['ok1', 'ok2'])) # ['ok1-def2']
+print(rand.gen('(:test_target:)', [['ok1', 'ok2']])) # ['ok1-ok2']
+print(rand.gen('(:test_target:)', [['ok1', 'ok2'], 'ok3'])) # ['ok1-ok2']
+print(rand.gen('(:test_target:)', [{'arg1': 'ok1'}])) # ['ok1-def2']
+print(rand.gen('(:test_target:)', [{'arg1': 'ok1', 'arg2': 'ok2'}])) # ['ok1-ok2']
+```
+
+The library *rand* also has integration with existing projects such as Faker. Ensure you have faker library installed.
+
+```python
+from rand import Rand
+
+
+rand = Rand()
+rand.gen('(:faker_hexify:)') # abc
+```
+
 Test
 ----
 
@@ -63,3 +106,4 @@ For hot-reload development coding
 $ npm i -g nodemon
 $ nodemon -w rand --exec python -c "from rand import Rand"
 ```
+

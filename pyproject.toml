@@ -12,11 +12,7 @@ packages = [
 ]
 [tool.poetry.dependencies]
 python = "^3.6"
-pytest = { version = "^5.0" }
 pytest-cov = { version = "^2.0" }
-
-[tool.poetry.dev-dependencies]
-
 
 [tool.poetry.extras]
 test = ["pytest"]

@@ -1,9 +1,8 @@
 import pytest
-from rand import Rand
-from rand.providers.base import RandProxyBaseProvider
 
 
 def create_rand():
+    from rand import Rand
     rand = Rand(seed=28)
     return rand
 
@@ -37,7 +36,7 @@ def test_branch():
 
 def test_in():
     rand = create_rand()
-    assert rand.gen('[kororo]') == ['r']
+    assert rand.gen('[kororo]') == ['k']
     assert rand.gen('k[o]r[o]r[o]') == ['kororo']
 
 
@@ -46,8 +45,8 @@ def test_max_repeat():
     assert rand.gen('r{2,8}') == ['rr']
     with pytest.raises(ValueError):
         assert rand.gen('r{2,}') == ['rr']
-    assert rand.gen('r{,8}') == ['r']
-    assert rand.gen('(roro){2,8}') == ['roro']
+    assert rand.gen('r{,8}') == ['rr']
+    assert rand.gen('(roro){2,8}') == ['rorororororororororororo']
     with pytest.raises(ValueError):
         assert rand.gen('r+') == ['rr']
     assert rand.gen('r?') == ['']
@@ -60,19 +59,19 @@ def test_range():
     assert rand.gen('[a-z][0-9]') == ['h7']
     # (IN, [(LITERAL, 97), (RANGE, (97, 122)), (LITERAL, 122)])
     # basically (a|a-z|z)
-    assert rand.gen('[aa-zz]') == ['z']
+    assert rand.gen('[aa-zz]') == ['a']
 
 
 def test_supattern():
     rand = create_rand()
     assert rand.gen('(ro)') == ['ro']
     assert rand.gen('(ko|ro|ro)') == ['ko']
-    assert rand.gen('(?P<ro>ro)') == ['ko']
+    assert rand.gen('(?P<ro>ro)') == ['ro']
 
 
 def test_complex():
     rand = create_rand()
-    assert rand.gen('(ko|ro|ro){2,8}') == ['roro']
+    assert rand.gen('(ko|ro|ro){2,8}') == ['roko']
 
 
 def test_ignored():
@@ -90,16 +89,20 @@ def test_exception():
 
 
 def test_register_parse():
-    def test1(ri: Rand, pattern, opts):
+    def test1(ri, pattern, opts):
         return 'test1'
 
     rand = create_rand()
     assert rand.gen('(:test_not_exist:)') == ['']
     rand.register_parse('test1', test1)
     assert rand.gen('(:test1:)') == ['test1']
+    with pytest.raises(Exception):
+        assert rand.register_parse('test_with_wrong_name[]', test1)
 
 
 def test_proxy_provider():
+    from rand.providers.base import RandProxyBaseProvider
+
     class TestProxy:
         def target(self, arg1='def1', arg2='def2'):
             return '%s-%s' % (arg1, arg2)
@@ -115,6 +118,6 @@ def test_proxy_provider():
     assert rand.gen('(:test_target:)', [['ok1', 'ok2'], 'ok3']) == ['ok1-ok2']
     assert rand.gen('(:test_target:)', [{'arg1': 'ok1'}]) == ['ok1-def2']
     assert rand.gen('(:test_target:)', [{'arg1': 'ok1', 'arg2': 'ok2'}]) == ['ok1-ok2']
+    assert rand.gen('(:test_target:arg_name:)', {'arg_name': {'arg1': 'ok1', 'arg2': 'ok2'}}) == ['ok1-ok2']
     with pytest.raises(Exception):
         assert rand.gen('(:test_target:)', [{'arg1': 'ok1', 'arg2': 'ok2', 'arg3': 'ok3'}]) == ['ok1-ok2']
-
