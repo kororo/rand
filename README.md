@@ -6,7 +6,7 @@ Random generated String from regex pattern.
 WARNING
 -------
 
-The library *rand* is still in working-in-progress. It is subject to high possibility of API changes. Would appreciate for feedbacks, suggestions or helps.
+The library **rand** is still in working-in-progress. It is subject to high possibility of API changes. Would appreciate for feedbacks, suggestions or helps.
 
 Install
 -------
@@ -51,27 +51,35 @@ rand.gen('[a-z]') # char between a to z
 
 # generate pattern subpattern
 rand.gen('(ro)') # ['ro']
+
+# use built-in providers
+rand.gen('(:en_vocal:)') # char either a, i, u, e, o
 ```
 
 Providers
 ---------
 
-The library *rand* at core only provide random generator based on regex. Providers are built to allow extensions for rand.
+The library **rand** at core only provide random generator based on regex. Providers are built to allow extensions for rand.
 Below is sample code how to integrate existing class definition (TestProxy) to Rand.
 
 ```python
 from rand import Rand
 from rand.providers.base import RandProxyBaseProvider
 
-
+# class definition
 class TestProxy:
+    # simple function definition to return args values
     def target(self, arg1='def1', arg2='def2'):
         return '%s-%s' % (arg1, arg2)
 
+# init rand class
 rand = Rand()
+
+# create proxy provider helper and register to rand
 test_proxy = RandProxyBaseProvider(prefix='test', target=TestProxy())
 rand.register_provider(test_proxy)
-rand.register_parse('test_target', test_proxy.proxy_parse())
+
+# test
 print(rand.gen('(:test_target:)')) # ['def1-def2']
 print(rand.gen('(:test_target:)', ['ok1'])) # ['ok1-def2']
 print(rand.gen('(:test_target:)', ['ok1', 'ok2'])) # ['ok1-def2']

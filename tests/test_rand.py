@@ -110,7 +110,6 @@ def test_proxy_provider():
     rand = create_rand()
     test_proxy = RandProxyBaseProvider(prefix='test', target=TestProxy())
     rand.register_provider(test_proxy)
-    rand.register_parse('test_target', test_proxy.proxy_parse())
     assert rand.gen('(:test_target:)') == ['def1-def2']
     assert rand.gen('(:test_target:)', ['ok1']) == ['ok1-def2']
     assert rand.gen('(:test_target:)', ['ok1', 'ok2']) == ['ok1-def2']
