@@ -1,14 +1,21 @@
 [tool.poetry]
 name = "rand"
-version = "0.1.0"
+version = "0.1.1"
 description = "Generate String from regex pattern"
 authors = ["kororo"]
 license = "MIT"
-
+readme = "README.md"
+repository = "https://github.com/kororo/rand"
+keywords = ["random", "generator", "string", "regex"]
+packages = [
+    { include = "rand" }
+]
 [tool.poetry.dependencies]
 python = "^3.6"
+pytest-cov = { version = "^2.0" }
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.extras]
+test = ["pytest"]
 
 [build-system]
 requires = ["poetry>=0.12"]

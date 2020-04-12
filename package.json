@@ -1,0 +1,21 @@
+{
+  "name": "rand",
+  "version": "1.0.0",
+  "description": "Generate String from regex pattern",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon -w rand --exec python -c \"from rand import Rand\"",
+    "test": "tox",
+    "deploy": "poetry export -f requirements.txt > requirements.txt && poetry update && poetry build && poetry deploy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kororo/rand.git"
+  },
+  "author": "kororo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kororo/rand/issues"
+  },
+  "homepage": "https://github.com/kororo/rand#readme"
+}
