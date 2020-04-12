@@ -7,16 +7,22 @@ rand
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/rand.svg)](https://pypi.python.org/project/rand/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/rand)](https://pypi.python.org/project/rand/)
 
+---
 
-Random generated String from regex pattern.
+Random generated String from regex pattern
 
-WARNING
--------
+# WARNING
 
 The library **rand** is still in working-in-progress. It is subject to high possibility of API changes. Would appreciate for feedbacks, suggestions or helps.
 
-Install
--------
+# Why?
+
+There are lot of existing projects similar to **rand**, they are powerful and doing the similar goals and results. However most of them are old projects/non-maintained and non MIT license that not really 100% embracing the idea of OOS.
+
+This is good opportunity for **rand** to be the library to help generate random data for any projects and gather all other existing library to be the main driver.
+
+
+# Install
 
 Use pip or clone this repository and execute the setup.py file.
 
@@ -24,8 +30,9 @@ Use pip or clone this repository and execute the setup.py file.
 $ pip install rand
 ```
 
-Usages
-------
+# Usages
+
+Basic usage **rand** examples
 
 ```python
 # import module
@@ -58,15 +65,52 @@ rand.gen('[a-z]') # char between a to z
 
 # generate pattern subpattern
 rand.gen('(ro)') # ['ro']
-
-# use built-in providers
-rand.gen('(:en_vocal:)') # char either a, i, u, e, o
 ```
 
 Providers
 ---------
 
 The library **rand** at core only provide random generator based on regex. Providers are built to allow extensions for rand.
+
+## Built-in Providers
+
+There are a few built-in providers inside **rand**
+
+### EN Provider
+
+This library cover most usage around English requirements.
+
+```python
+from rand import Rand
+
+
+rand = Rand()
+rand.gen('(:en_vocal:)') # char either a, i, u, e, o
+```
+
+## Integration Providers
+
+The library *rand* also has integration with existing projects such as Faker. Ensure you have faker library installed.
+
+### [Faker](https://github.com/joke2k/faker)
+
+There is super basic integration with Faker for now, soon will be more implemented.
+
+```shell script
+# ensure you have Faker installed
+pip install Faker
+```
+
+```python
+from rand import Rand
+
+
+rand = Rand()
+rand.gen('(:faker_hexify:)') # abc
+```
+
+## Custom Providers
+
 Below is sample code how to integrate existing class definition (TestProxy) to Rand.
 
 ```python
@@ -96,18 +140,7 @@ print(rand.gen('(:test_target:)', [{'arg1': 'ok1'}])) # ['ok1-def2']
 print(rand.gen('(:test_target:)', [{'arg1': 'ok1', 'arg2': 'ok2'}])) # ['ok1-ok2']
 ```
 
-The library *rand* also has integration with existing projects such as Faker. Ensure you have faker library installed.
-
-```python
-from rand import Rand
-
-
-rand = Rand()
-rand.gen('(:faker_hexify:)') # abc
-```
-
-Test
-----
+# Test
 
 Run test by installing packages and run tox
 
@@ -122,3 +155,13 @@ $ npm i -g nodemon
 $ nodemon -w rand --exec python -c "from rand import Rand"
 ```
 
+# Help?
+
+Any feedback, 
+
+# Similar Projects
+
+List of projects similar to **rand**:
+- [exrex](https://github.com/asciimoo/exrex): Irregular methods on regular expressions
+- [xeger](https://github.com/crdoconnor/xeger): Library to generate random strings from regular expressions
+- [strgen](https://github.com/paul-wolf/strgen): A Python module for a template language that generates randomized data

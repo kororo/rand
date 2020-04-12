@@ -1,3 +1,7 @@
+branches:
+  only:
+  - master
+  - release
 os: linux
 language: python
 dist: xenial
