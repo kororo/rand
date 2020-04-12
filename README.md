@@ -1,6 +1,13 @@
 rand
 ====
 
+[![Travis (.org)](https://img.shields.io/travis/kororo/rand)](https://pypi.python.org/project/rand/)
+[![Coveralls github](https://img.shields.io/coveralls/github/kororo/rand)](https://pypi.python.org/project/rand/)
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/rand.svg)](https://pypi.python.org/project/rand/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/rand)](https://pypi.python.org/project/rand/)
+
+
 Random generated String from regex pattern.
 
 WARNING

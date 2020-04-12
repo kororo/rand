@@ -1,0 +1,17 @@
+os: linux
+language: python
+dist: xenial
+# env:
+python:
+  - 3.6
+  - 3.7
+  - 3.8
+# before_install:
+#   - sudo apt-get install -y
+install:
+  - pip install tox
+  - pip install -r requirements.txt
+script:
+  - tox
+after_success:
+  - coveralls
