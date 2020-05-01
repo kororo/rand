@@ -6,7 +6,3 @@ class RandFakerProvider(RandProxyBaseProvider):
         from faker import Faker
         target = target if target else Faker()
         super(RandFakerProvider, self).__init__(prefix=prefix, target=target)
-
-    def register(self):
-        for name in ['hexify', 'numerify']:
-            self.rand.register_parse('%s_%s' % (self._prefix, name), self.proxy_parse())

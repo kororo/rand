@@ -6,7 +6,8 @@
   "scripts": {
     "start": "nodemon -w rand --exec python -c \"from rand import Rand\"",
     "test": "tox",
-    "deploy": "poetry export -f requirements.txt > requirements.txt && poetry update && poetry build && poetry deploy"
+    "export": "poetry export -f requirements.txt > requirements.txt",
+    "deploy": "npm run export && poetry update && poetry build && poetry deploy"
   },
   "repository": {
     "type": "git",
