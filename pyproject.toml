@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rand"
-version = "0.1.1"
+version = "0.2.0"
 description = "Generate String from regex pattern"
 authors = ["kororo"]
 license = "MIT"
@@ -13,6 +13,7 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.6"
 pytest-cov = { version = "^2.0" }
+peewee = "^3.13.3"
 
 [tool.poetry.extras]
 test = ["pytest"]

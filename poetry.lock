@@ -79,6 +79,14 @@ six = "*"
 
 [[package]]
 category = "main"
+description = "a little orm"
+name = "peewee"
+optional = false
+python-versions = "*"
+version = "3.13.3"
+
+[[package]]
+category = "main"
 description = "plugin and hook calling mechanisms for python"
 name = "pluggy"
 optional = false
@@ -183,7 +191,7 @@ testing = ["jaraco.itertools", "func-timeout"]
 test = []
 
 [metadata]
-content-hash = "0c8a4ec4501b803e0b95b39cc494d568b70d821dbd088e603b03082a5e0f29c9"
+content-hash = "a8d20e60bd5ce75a9a7de8ead59ed6d8051b7d744115f3ab940f5a5a251e9cbf"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -243,6 +251,9 @@ more-itertools = [
 packaging = [
     {file = "packaging-20.3-py2.py3-none-any.whl", hash = "sha256:82f77b9bee21c1bafbf35a84905d604d5d1223801d639cf3ed140bd651c08752"},
     {file = "packaging-20.3.tar.gz", hash = "sha256:3c292b474fda1671ec57d46d739d072bfd495a4f51ad01a055121d81e952b7a3"},
+]
+peewee = [
+    {file = "peewee-3.13.3.tar.gz", hash = "sha256:1269a9736865512bd4056298003aab190957afe07d2616cf22eaf56cb6398369"},
 ]
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},

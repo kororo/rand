@@ -5,9 +5,12 @@ import string
 import typing
 import importlib
 import pkgutil
+import logging
 from sre_parse import SubPattern
 from sre_constants import LITERAL, MAXREPEAT
 from random import Random
+
+logger = logging.getLogger('rand')
 
 # support . notation
 ANY_NONE = string.printable
@@ -15,14 +18,23 @@ ANY_NONE = string.printable
 # support MAX_REPEAT_MAXREPEAT
 MAX_REPEAT_MAXREPEAT = None
 
+# type alias for parser fn definition
+# def _parse_noop(self, pattern, opts=None):
+#     return ''
+ParseFnType = typing.Callable[['Rand', typing.Any, typing.Optional[typing.Any]], typing.Any]
+
 
 class Rand:
     _random: Random
+    _providers: dict
+    _parsers: dict
     _opts: dict
     _args: dict
 
     def __init__(self, seed=None, opts: dict = None):
         self._random = Random()
+        self._providers = {}
+        self._parsers = {}
         self._opts = opts if opts else {}
         self._args = {}
         if seed:
@@ -42,11 +54,14 @@ class Rand:
         if isinstance(provider, RandProxyBaseProvider):
             if provider.target:
                 provider.target.rand = self
+        # allowing to override providers
+        self._providers[provider.prefix] = provider
         provider.register()
 
     def _discover_providers(self):
         import rand.providers
         from rand.providers.base import RandBaseProvider, RandProxyBaseProvider
+        from rand.providers.ds.ds import RandDatasetBaseProvider
 
         def iter_namespace(ns_pkg: typing.Any):
             return pkgutil.walk_packages(ns_pkg.__path__, '%s.' % ns_pkg.__name__)
@@ -57,19 +72,33 @@ class Rand:
         for module_name, module in providers.items():
             for obj_name, obj in inspect.getmembers(module):
                 if inspect.isclass(obj):
-                    if issubclass(obj, RandBaseProvider) and obj != RandBaseProvider and obj != RandProxyBaseProvider:
+                    exclude_classes = [RandBaseProvider, RandProxyBaseProvider, RandDatasetBaseProvider]
+                    if issubclass(obj, RandBaseProvider) and obj not in exclude_classes:
                         try:
-                            # TODO: perhaps adding new class function to check?
+                            # TODO: perhaps adding new class function to check whether allowed to load?
                             self.register_provider(provider=obj())
-                        except Exception:
-                            pass
+                        except Exception as ex:
+                            logger.warning(
+                                msg='E003 - Unable to auto-load provider "%s", Reason: %s' % (obj_name, str(ex))
+                            )
 
-    def register_parse(self, name: str, fn: typing.Callable[['Rand', typing.Any], typing.Any]):
+    def register_parse(self, name: str, fn: ParseFnType):
         parse_name = '_parse_%s' % name.lower()
         invalid_chars = ''.join(list(set(list(parse_name)) - set(list(string.ascii_letters + string.digits + '_'))))
         if len(invalid_chars) > 0:
             raise ValueError('E002 - Name "%s" contains invalid character "%s"' % (name, invalid_chars))
-        setattr(self, parse_name, fn)
+        self._parsers[parse_name] = fn
+
+    def do_parse(self, name: str, pattern: any, opts: dict):
+        from rand.providers.base import RandBaseProvider
+        provider: RandBaseProvider
+        for _, provider in self._providers.items():
+            # remember, name here is always prefixed with _parse_[PREFIX] to avoid conflict
+            result = provider.parse(name, pattern, opts)
+            if result:
+                return result
+        fn = self._parsers.get(name)
+        return fn(pattern, opts) if fn else self._parse_noop(pattern)
 
     def _parse_noop(self, pattern):
         return ''
@@ -136,7 +165,7 @@ class Rand:
                 # get parser based on token with _parse_noop as default
                 opts = {'token': token, 'args': args}
                 name = '_parse_%s' % str(token).lower()
-                return getattr(self, name, lambda ri, _, o: self._parse_noop(pattern))(self, pattern, opts)
+                return self.do_parse(name, pattern, opts)
         return self._parse(patterns)
 
     def _parse_list(self, pattern):

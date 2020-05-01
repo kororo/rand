@@ -1,4 +1,4 @@
 import warnings
-from rand.rand import Rand
+from rand.rand import Rand, ParseFnType
 
 warnings.simplefilter(action='ignore', category=FutureWarning)

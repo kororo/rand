@@ -89,7 +89,7 @@ def test_exception():
 
 
 def test_register_parse():
-    def test1(ri, pattern, opts):
+    def test1(pattern, opts):
         return 'test1'
 
     rand = create_rand()
@@ -120,3 +120,10 @@ def test_proxy_provider():
     assert rand.gen('(:test_target:arg_name:)', {'arg_name': {'arg1': 'ok1', 'arg2': 'ok2'}}) == ['ok1-ok2']
     with pytest.raises(Exception):
         assert rand.gen('(:test_target:)', [{'arg1': 'ok1', 'arg2': 'ok2', 'arg3': 'ok3'}]) == ['ok1-ok2']
+
+    with pytest.raises(Exception):
+        class ErrorProxy:
+            def __init__(self):
+                raise Exception('Test error')
+        test_proxy = RandProxyBaseProvider(prefix='test_error', target=ErrorProxy())
+        rand.register_provider(test_proxy)
