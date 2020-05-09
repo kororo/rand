@@ -2,7 +2,7 @@ rand
 ====
 
 [![Travis (.org)](https://img.shields.io/travis/kororo/rand)](https://pypi.python.org/project/rand/)
-[![Coveralls github](https://img.shields.io/coveralls/github/kororo/rand)](https://pypi.python.org/project/rand/)
+[![Coverage Status](https://coveralls.io/repos/github/kororo/rand/badge.svg?branch=master)](https://coveralls.io/github/kororo/rand?branch=master)
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/rand.svg)](https://pypi.python.org/project/rand/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/rand)](https://pypi.python.org/project/rand/)
@@ -142,9 +142,77 @@ rnd = Rand()
 rnd.gen('(:faker_hexify:)') # abc
 ```
 
+## Custom Parse
+
+Extending rand is simple, there are register_parse and register_provider, both of this has special level of customisation.
+
+### Simple Register Parse
+
+This is example of creating custom parse in simple way.
+
+```python
+from rand import Rand
+
+# init rand class
+rnd = Rand()
+
+# the definition
+def parse_test1(pattern, opts=None):
+    return 'test1'
+
+# the registration
+rnd.register_parse(name='test1', fn=parse_test1)
+# test it
+rnd.gen('(:test1:)')
+```
+
+### Decorator Wrapper Register Parse
+
+This is faster way with decorator pattern to register custom parse.
+
+```python
+from rand import Rand
+
+# init rand class
+rnd = Rand()
+
+# the definition
+@rnd.register_parse_wrapper(name='test1')
+def parse_test1(pattern, opts=None):
+    return 'test1'
+
+# test it
+rnd.gen('(:test1:)')
+```
+
 ## Custom Providers
 
+Custom provider is upper level customisation in **rand**, it behaves quite differently than custom parse  
+
+### Simple Register Provider
+
 Below is sample code on how to integrate an existing class definition (TestProxy) to Rand.
+
+```python
+from rand.providers.base import RandBaseProvider
+from rand import Rand
+
+class TestProvider(RandBaseProvider):
+    def _parse_fn(self, pattern, opts=None):
+        return 'test'
+
+    def parse(self, name: str, pattern: any, opts: dict):
+        # name always start with _parse_[PREFIX], normalise first
+        parsed_name = self.get_parse_name(name)
+        if parsed_name:
+            return self._parse_fn(pattern, opts)
+        return None
+
+# init rand class
+rnd = Rand()
+rnd.register_provider(TestProvider(prefix='test_fn'))
+assert rnd.gen('(:test_fn:)') == 'test'
+```
 
 ```python
 from rand import Rand
@@ -172,6 +240,52 @@ print(rnd.gen('(:test_target:)', [['ok1', 'ok2'], 'ok3'])) # ['ok1-ok2']
 print(rnd.gen('(:test_target:)', [{'arg1': 'ok1'}])) # ['ok1-def2']
 print(rnd.gen('(:test_target:)', [{'arg1': 'ok1', 'arg2': 'ok2'}])) # ['ok1-ok2']
 ```
+
+### Decorator Wrapper Register Provider
+
+This is faster way with decorator pattern to register custom provider.
+
+```python
+from rand import Rand
+
+# init rand class
+rnd = Rand()
+
+@rnd.register_provider_fn_wrapper(prefix='test2')
+def parse_test2(pattern, opts=None):
+    return 'test2'
+
+print(rnd.gen('(:test2:)'))  # 'test2'
+```
+
+## Different Between Custom Parser and Provider
+
+The way **rand** works, register_parse taps into the core of **rand**, following the token from sre_parse, when the definition is returned,
+it is possible to return sre_parse token with existing token name or custom token which points to the custom definition.
+
+```python
+from rand import Rand
+
+# init rand class
+rnd = Rand()
+
+@rnd.register_parse_wrapper(name='test1')
+def parse_test1(pattern, opts=None):
+    return 'test1'
+
+
+@rnd.register_parse_wrapper(name='test2')
+def parse_test2(pattern, opts=None):
+    return rnd.sre_parse_compile_parse('(:test1:)')
+
+
+print(rnd.gen('(:test2:)'))  # 'test1'
+```
+
+
+
+
+
 
 # Test
 

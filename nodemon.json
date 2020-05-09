@@ -1,5 +1,5 @@
 {
-  "watch": ["rand"],
+  "watch": ["."],
   "exec": "python -c \"import rand\"",
   "ext": "py"
 }
