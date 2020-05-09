@@ -6,10 +6,12 @@ import typing
 import importlib
 import pkgutil
 import logging
+import warnings
 from sre_parse import SubPattern
 from sre_constants import LITERAL, MAXREPEAT
 from random import Random
 
+warnings.simplefilter(action='ignore', category=FutureWarning)
 logger = logging.getLogger('rand')
 
 # support . notation
@@ -21,7 +23,7 @@ MAX_REPEAT_MAXREPEAT = None
 # type alias for parser fn definition
 # def _parse_noop(self, pattern, opts=None):
 #     return ''
-ParseFnType = typing.Callable[['Rand', typing.Any, typing.Optional[typing.Any]], typing.Any]
+ParseFnType = typing.Callable[[typing.Any, typing.Optional[typing.Any]], typing.Any]
 
 
 class Rand:
@@ -39,7 +41,9 @@ class Rand:
         self._args = {}
         if seed:
             self.random_seed(seed)
-        self._discover_providers()
+        # import built-in providers
+        import rand.providers
+        self.discover_providers(rand.providers)
 
     @property
     def random(self):
@@ -58,8 +62,30 @@ class Rand:
         self._providers[provider.prefix] = provider
         provider.register()
 
-    def _discover_providers(self):
-        import rand.providers
+    def register_provider_fn_wrapper(self, prefix: str):
+        def decorator_fn(fn):
+            from rand.providers.base import RandBaseProvider
+
+            class FNProvider(RandBaseProvider):
+                def parse(self, name: str, pattern: any, opts: dict):
+                    # name always start with _parse_[PREFIX], normalise first
+                    parsed_name = self.get_parse_name(name)
+                    if parsed_name:
+                        return fn(pattern, opts)
+                    return None
+
+            self.register_provider(FNProvider(prefix=prefix))
+            # this is ignored basically, there is no need to handle, when function is called
+            # import functools
+            # @functools.wraps(fn)
+            # def wrapper_fn(*args, **kwargs):
+            #     value = fn(*args, **kwargs)
+            #     return value
+            # return wrapper_fn
+
+        return decorator_fn
+
+    def discover_providers(self, ns):
         from rand.providers.base import RandBaseProvider, RandProxyBaseProvider
         from rand.providers.ds.ds import RandDatasetBaseProvider
 
@@ -67,7 +93,7 @@ class Rand:
             return pkgutil.walk_packages(ns_pkg.__path__, '%s.' % ns_pkg.__name__)
 
         providers = {
-            name: importlib.import_module(name) for finder, name, ispkg in iter_namespace(rand.providers)
+            name: importlib.import_module(name) for finder, name, ispkg in iter_namespace(ns)
         }
         for module_name, module in providers.items():
             for obj_name, obj in inspect.getmembers(module):
@@ -89,16 +115,45 @@ class Rand:
             raise ValueError('E002 - Name "%s" contains invalid character "%s"' % (name, invalid_chars))
         self._parsers[parse_name] = fn
 
+    def register_parse_wrapper(self, name: str):
+        def decorator_fn(fn):
+            self.register_parse(name=name, fn=fn)
+            # this is ignored basically, there is no need to handle, when function is called
+            # import functools
+            # @functools.wraps(fn)
+            # def wrapper_fn(*args, **kwargs):
+            #     value = fn(*args, **kwargs)
+            #     return value
+            # return wrapper_fn
+
+        return decorator_fn
+
     def do_parse(self, name: str, pattern: any, opts: dict):
+        # the steps to executing fn of specified name:
+        # 1. checking all the parser from custom providers in register_provider
+        # 2. checking all the parser from self._parsers in register_parser
+        # 3. finally, checking all the privitive parser from all _parse_xyz in self
+        # 4. otherwise, return self._parse_noop
         from rand.providers.base import RandBaseProvider
         provider: RandBaseProvider
+        # this is important to remember, it seems noop operation that removing _parse_ and adding back _parse_
+        # this op important when a parser, return back as token with ('WORDS', ['test123'])
+        # when 'WORDS' as name, it will be non callable because it expect as _parse_words
+        # in order to support this, it is required to normalise all the _parse_ first and re-added it back
+        name = re.sub('^_parse_', '', str(name))
+        name = ('_parse_%s' % name).lower()
         for _, provider in self._providers.items():
             # remember, name here is always prefixed with _parse_[PREFIX] to avoid conflict
             result = provider.parse(name, pattern, opts)
             if result:
                 return result
         fn = self._parsers.get(name)
-        return fn(pattern, opts) if fn else self._parse_noop(pattern)
+        if fn:
+            return fn(pattern, opts)
+        fn = getattr(self, name, self._parse_noop)
+        if fn:
+            return fn(pattern)
+        return self._parse_noop(pattern)
 
     def _parse_noop(self, pattern):
         return ''
@@ -155,7 +210,7 @@ class Rand:
                 # input: (::)
                 # pattern: (SUBPATTERN, (1, 0, 0, [(LITERAL, 58), (LITERAL, 58)]))
                 # get the custom name
-                token = self._parse_list(patterns[1:-1])
+                token = ''.join(map(lambda x: str(x), self._parse_list(patterns[1:-1])))
                 # get the args based on the token and input args
                 args, arg_name = None, str(subpattern_index)
                 # if named args specified like (:en_stringify:arg_name:)
@@ -170,16 +225,23 @@ class Rand:
 
     def _parse_list(self, pattern):
         # pattern: [(LITERAL, 114), (LITERAL, 111)]
-        return ''.join(map(lambda x: str(x), filter(None, [self._parse(x) for x in pattern])))
+        # return ''.join(map(lambda x: str(x), filter(None, [self._parse(x) for x in pattern])))
+        return list(filter(None, [self._parse(x) for x in pattern]))
 
     def _parse(self, pattern) -> typing.Any:
-        if isinstance(pattern, SubPattern):
-            # handle subpattern class specially
-            return self._parse_list(pattern)
+        if isinstance(pattern, SubPattern) or isinstance(pattern, list):
+            # for subpattern, check what is the type, if non list, force it to be list
+            pattern = pattern if type(pattern) == 'list' else list(pattern)
+            # handle when result return list after the parse result
+            # [(LITERAL, 114), (LITERAL, 111)]
+            return ''.join(map(lambda x: str(x), self._parse_list(pattern)))
         elif isinstance(pattern, tuple):
             token = pattern[0]
             # get parser based on token with _parse_noop as default
-            return getattr(self, '_parse_%s' % str(token).lower(), self._parse_noop)(pattern)
+            result = self.do_parse(token, pattern=pattern, opts={})
+            # the reason to throw again back to _parse because it may contain token
+            return self._parse(result)
+        return pattern
 
     def _prepare_args(self, args):
         # args input will be always be either list or dict
@@ -206,15 +268,20 @@ class Rand:
                 vals[str(i)] = v if isinstance(v, list) or isinstance(v, dict) else [v]
         return vals
 
-    def gen(self, pattern: str, args: typing.Union[list, dict] = None,
-            maps=None, filters=None,
-            n: int = 1) -> typing.List[str]:
+    def sre_parse_compile_parse(self, pattern) -> SubPattern:
         # get normalised regex pattern from regex compiler
         regex_pattern: str = re.compile(pattern=pattern).pattern
         # return parsed pattern from regex
         # input: abc
         # output: [(LITERAL, 97), (LITERAL, 98), (LITERAL, 99)]
         regex_parsed: SubPattern = sre_parse.parse(regex_pattern)
+        return regex_parsed
+
+    def gen(self, pattern: str, args: typing.Union[list, dict] = None,
+            maps=None, filters=None,
+            n: int = 1) -> typing.List[str]:
+        # get normalised regex pattern from regex compiler and get parsed pattern
+        regex_parsed: SubPattern = self.sre_parse_compile_parse(pattern)
         # generate randomly X times
         self._args = self._prepare_args(args)
         rs = [self._parse(regex_parsed) for _ in range(n)]
