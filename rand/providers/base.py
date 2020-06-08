@@ -6,9 +6,9 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 
 class BaseRandAdapter:
-    _rand: typing.Optional['Rand']
+    _rand: typing.Optional["Rand"]
 
-    def __init__(self, rand: 'Rand' = None):
+    def __init__(self, rand: "Rand" = None):
         self._rand = rand
 
     @property
@@ -23,7 +23,7 @@ class BaseRandAdapter:
 class RandBaseProvider(BaseRandAdapter):
     _prefix: str
 
-    def __init__(self, prefix: str = ''):
+    def __init__(self, prefix: str = ""):
         super(RandBaseProvider, self).__init__()
         self.prefix = prefix
 
@@ -37,13 +37,39 @@ class RandBaseProvider(BaseRandAdapter):
 
     def get_parse_name(self, name: str) -> typing.Optional[str]:
         # name always start with _parse_[PREFIX], normalise first
-        name = re.sub('^_parse_', '', name)
+        name = re.sub("^_parse_", "", name)
         if name.startswith(self.prefix):
-            name = re.sub('^%s_' % self.prefix, '', name)
+            name = re.sub("^%s_" % self.prefix, "", name)
+            return name
+        return None
+
+    def get_map_name(self, name: str) -> typing.Optional[str]:
+        # name always start with _map_[PREFIX], normalise first
+        name = re.sub("^_map_", "", name)
+        print("name", name, self.prefix)
+        if name.startswith(self.prefix):
+            name = re.sub("^%s_" % self.prefix, "", name)
+            return name
+        return None
+
+    def get_filter_name(self, name: str) -> typing.Optional[str]:
+        # name always start with _filter_[PREFIX], normalise first
+        name = re.sub("^_filter_", "", name)
+        if name.startswith(self.prefix):
+            name = re.sub("^%s_" % self.prefix, "", name)
             return name
         return None
 
     def parse(self, name: str, pattern: any, opts: dict):  # pragma: no cover
+        # TODO: should expand type of opts, {"token": "", "args": {}}
+        return None
+
+    def filter(self, name: str, pattern: any, opts: dict):  # pragma: no cover
+        # TODO: should expand type of opts, {"token": "", "args": {}}
+        return None
+
+    def map(self, name: str, pattern: any, opts: dict):  # pragma: no cover
+        # TODO: should expand type of opts, {"token": "", "args": {}}
         return None
 
     def register(self):  # pragma: no cover
@@ -51,7 +77,7 @@ class RandBaseProvider(BaseRandAdapter):
 
 
 class RandProxyBaseProvider(RandBaseProvider):
-    def __init__(self, prefix: str = '', target=None):
+    def __init__(self, prefix: str = "", target=None):
         super(RandProxyBaseProvider, self).__init__(prefix=prefix)
         self.target = target
 
@@ -65,10 +91,10 @@ class RandProxyBaseProvider(RandBaseProvider):
 
     def proxy_parse(self, name: str):
         def parse(pattern, opts):
-            token, args = opts['token'], opts['args']
+            token, args = opts["token"], opts["args"]
             # name can be acquired from the pattern token, commented out for clarity
             # name = token.replace('%s_' % self._prefix, '')
-            fn = getattr(self._target, name.replace('%s_' % self._prefix, ''))
+            fn = getattr(self._target, name.replace("%s_" % self._prefix, ""))
             if fn:
                 if isinstance(args, list):
                     return fn(*args)
@@ -76,13 +102,58 @@ class RandProxyBaseProvider(RandBaseProvider):
                     return fn(**args)
                 else:
                     return fn()
+
         return parse
 
     def parse(self, name: str, pattern: any, opts: dict):
         # name always start with _parse_[PREFIX], normalise first
         parsed_name = self.get_parse_name(name)
-        if parsed_name and callable(getattr(self._target, parsed_name, None)) and not parsed_name.startswith('_'):
+        if (
+            parsed_name
+            and callable(getattr(self._target, parsed_name, None))
+            and not parsed_name.startswith("_")
+        ):
             return self.proxy_parse(parsed_name)(pattern, opts)
+        return None
+
+    def proxy_map(self, name: str):
+        def map_(pattern, opts):
+            token, args = opts["token"], opts["args"]
+            fn = getattr(self._target, name.replace("%s_" % self._prefix, ""))
+            if fn:
+                return fn(**args)
+
+        return map_
+
+    def map(self, name: str, pattern: any, opts: dict):
+        # name always start with _map_[PREFIX], normalise first
+        mapped_name = self.get_map_name(name)
+        if (
+            mapped_name
+            and callable(getattr(self._target, mapped_name, None))
+            and not mapped_name.startswith("_")
+        ):
+            return self.proxy_map(mapped_name)(pattern, opts)
+        return None
+
+    def proxy_filter(self, name: str):
+        def filter_(pattern, opts):
+            token, args = opts["token"], opts["args"]
+            fn = getattr(self._target, name.replace("%s_" % self._prefix, ""))
+            if fn:
+                return fn(**args)
+
+        return filter_
+
+    def filter(self, name: str, pattern: any, opts: dict):
+        # name always start with _filter_[PREFIX], normalise first
+        filtered_name = self.get_filter_name(name)
+        if (
+            filtered_name
+            and callable(getattr(self._target, filtered_name, None))
+            and not filtered_name.startswith("_")
+        ):
+            return self.proxy_filter(filtered_name)(pattern, opts)
         return None
 
     def register(self):

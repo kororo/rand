@@ -241,23 +241,6 @@ print(rnd.gen('(:test_target:)', [{'arg1': 'ok1'}])) # ['ok1-def2']
 print(rnd.gen('(:test_target:)', [{'arg1': 'ok1', 'arg2': 'ok2'}])) # ['ok1-ok2']
 ```
 
-### Decorator Wrapper Register Provider
-
-This is faster way with decorator pattern to register custom provider.
-
-```python
-from rand import Rand
-
-# init rand class
-rnd = Rand()
-
-@rnd.register_provider_fn_wrapper(prefix='test2')
-def parse_test2(pattern, opts=None):
-    return 'test2'
-
-print(rnd.gen('(:test2:)'))  # 'test2'
-```
-
 ## Different Between Custom Parser and Provider
 
 The way **rand** works, register_parse taps into the core of **rand**, following the token from sre_parse, when the definition is returned,
@@ -294,7 +277,7 @@ Run test by installing packages and run tox
 ```shell script
 $ pip install poetry tox
 $ tox
-$ tox -e py36 -- tests/test_ds.py
+$ tox -e py36 -- tests/test_001_parse.py
 ```
 
 For hot-reload development coding
